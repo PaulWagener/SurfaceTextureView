@@ -21,22 +21,30 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.TextureView.SurfaceTextureListener;
+import android.view.View;
 
+/**
+ * A subclass of TextureView, but with methods added that make it function like
+ * a GLSurfaceView. Instances of GLSurfaceView.Renderer can be supplied via the
+ * setRenderer() interface.
+ * 
+ * Based on https://github.com/dalinaum/TextureViewDemo/blob/master/src/kr/gdg/android/textureview/GLTriangleActivity.java
+ */
 @SuppressLint("NewApi")
 public class GLTextureView extends TextureView implements
-SurfaceTextureListener {
+SurfaceTextureListener, GLView {
 
 	public final int FPS = 60;
 	private RenderThread renderThread;
 	GLSurfaceView.Renderer renderer;
 
-	public GLTextureView(Context context, AttributeSet attrs) {
-		super(context, attrs);
+	public GLTextureView(Context context) {
+		super(context);
 		init();
 	}
 
-	public GLTextureView(Context context) {
-		super(context);
+	public GLTextureView(Context context, AttributeSet attrs) {
+		super(context, attrs);
 		init();
 	}
 
@@ -50,9 +58,10 @@ SurfaceTextureListener {
 		setOpaque(false);
 	}
 
+	@Override
 	public void setRenderer(GLSurfaceView.Renderer renderer) {
 		this.renderer = renderer;
-		if(renderThread != null) {
+		if (renderThread != null) {
 			renderThread.renderer = renderer;
 		}
 
@@ -81,18 +90,19 @@ SurfaceTextureListener {
 		public void run() {
 			initGL();
 
-			if(renderer != null) {
+			if (renderer != null) {
 				renderer.onSurfaceCreated(mGl, eglConfig);
 			}
 
 			while (true) {
+				long startTime = System.nanoTime();
 				checkCurrent();
 
-				while(!queue.isEmpty()) {
+				while (!queue.isEmpty()) {
 					queue.poll().run();
 				}
 
-				if(newSize != null && renderer != null) {
+				if (newSize != null && renderer != null) {
 					renderer.onSurfaceChanged(mGl, newSize.x, newSize.y);
 					newSize = null;
 				}
@@ -107,8 +117,7 @@ SurfaceTextureListener {
 				try {
 					Thread.sleep(1000 / FPS);
 				} catch (InterruptedException e) {
-					if(renderer != null) {
-					}
+					break;
 				}
 			}
 		}
@@ -134,6 +143,9 @@ SurfaceTextureListener {
 			}
 		}
 
+		/**
+		 * Lots of boilerplate to create a GL context
+		 */
 		private void initGL() {
 			mEgl = (EGL10) EGLContext.getEGL();
 
@@ -210,8 +222,13 @@ SurfaceTextureListener {
 	@Override
 	public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
 		renderThread.interrupt();
+		try {
+			renderThread.join();
+		} catch (InterruptedException e) {
+			Log.e("Regenmelding", "Interrupted in onSurfaceTextureDestroyed", e);
+		}
 		renderThread = null;
-		return false;
+		return true;
 	}
 
 	@Override
@@ -224,11 +241,15 @@ SurfaceTextureListener {
 	public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 	}
 
+	@Override
 	public void queueEvent(Runnable runnable) {
-		if(renderThread != null) {
+		if (renderThread != null) {
 			renderThread.queue.add(runnable);
 		}
-
 	}
 
+	@Override
+	public View getView() {
+		return this;
+	}
 }
