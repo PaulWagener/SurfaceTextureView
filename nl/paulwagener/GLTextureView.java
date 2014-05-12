@@ -28,7 +28,9 @@ import android.view.View;
  * a GLSurfaceView. Instances of GLSurfaceView.Renderer can be supplied via the
  * setRenderer() interface.
  * 
- * Based on https://github.com/dalinaum/TextureViewDemo/blob/master/src/kr/gdg/android/textureview/GLTriangleActivity.java
+ * Based on
+ * https://github.com/dalinaum/TextureViewDemo/blob/master/src/kr/gdg/android
+ * /textureview/GLTriangleActivity.java
  */
 @SuppressLint("NewApi")
 public class GLTextureView extends TextureView implements
