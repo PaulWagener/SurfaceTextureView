@@ -95,11 +95,12 @@ SurfaceTextureListener, GLView {
 			}
 
 			while (true) {
-				long startTime = System.nanoTime();
 				checkCurrent();
 
-				while (!queue.isEmpty()) {
-					queue.poll().run();
+				synchronized (queue) {
+					while (!queue.isEmpty()) {
+						queue.poll().run();
+					}
 				}
 
 				if (newSize != null && renderer != null) {
@@ -244,7 +245,9 @@ SurfaceTextureListener, GLView {
 	@Override
 	public void queueEvent(Runnable runnable) {
 		if (renderThread != null) {
-			renderThread.queue.add(runnable);
+			synchronized (renderThread.queue) {
+				renderThread.queue.add(runnable);
+			}
 		}
 	}
 
